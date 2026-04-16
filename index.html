@@ -94,8 +94,8 @@ button{
   bottom: -20px;
 }
 
-.c500 { background-image: url(images/chip_500.png);}
-.c100 {background-image: url(images/chip_100.png);}
+.c500{background-image: url(images/chip_500.png);}
+.c100{background-image: url(images/chip_100.png);}
 .c50 {background-image: url(images/chip_50.png);}
 .c25 {background-image: url(images/chip_25.png);}
 </style>
@@ -120,7 +120,6 @@ button{
   <button id="confirmBtn" onclick="confirmBet()">Confirm</button>
 
   <div id="handChips"></div>
-  <button onclick="exchange(100,500)">exchange</button>
 </div>
 
 <script>
@@ -148,6 +147,8 @@ function distribute(total) {
 }
 
 function exchange(from,to){
+  from = Number(from);
+  to = Number(to);
   if (from>to && chips[from]>0){
     chips[from]--;
     chips[to] += from/to;
@@ -155,6 +156,8 @@ function exchange(from,to){
     chips[from] -= to/from;
     chips[to]++;
   }else return;
+  console.log(from,to)
+  console.log(chips)
   render();
 }
 
@@ -181,7 +184,8 @@ function createChip(value, index, count, location) {
 function createStack(value, count, location) {
   const stack = document.createElement("div");
   stack.className = "stack";
-
+  stack.dataset.value = value;
+  stack.dataset.location = location;
   for (let i = 0; i < count; i++) {
     if (i<maxStack){
       stack.appendChild(createChip(value, i, count, location));
@@ -193,19 +197,19 @@ function createStack(value, count, location) {
       break;
     }
   }
-  stack.addEventListener("touchstart",()=>{
-    dragFrom = value;
-  });
-  stack.addEventListener("touchend",()=>{
-    console.log(dragFrom)
-    if (dragFrom !== null){
-      if (dragFrom === value)moveChip(value,location)
-      else exchange(dragFrom,value)
-      dragFrom = null;
-    }
+  stack.addEventListener("pointerdown",()=>{
+    dragFrom = stack;
   });
   return stack;
 }
+document.addEventListener("pointerup",(e)=>{
+  if (dragFrom === null)return
+  const target = e.target.closest(".stack");
+  if (!target)return
+  if (dragFrom === target)moveChip(dragFrom.dataset.value,dragFrom.dataset.location)
+  else exchange(dragFrom.dataset.value,target.dataset.value);
+  dragFrom = null;
+})
 
 function moveChip(value,location){
     if (locked) return;
