@@ -240,6 +240,11 @@ function render() {
 function confirmBet() {
   locked = true;
 }
+
+// スワイプ禁止
+document.addEventListener("touchmove",(e)=>{
+  e.preventDefault();
+},{passive:false})
 </script>
 
 </body>
