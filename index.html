@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ポーカーチップ</title>
+<style>
+body {
+  font-family: sans-serif;
+  text-align: center;
+  background: #0b3d2e;
+  color: white;
+  margin: 0;
+}
+
+#setup {
+  padding-top: 40px;
+}
+
+input{
+  color: #fff;
+  text-align: center;
+  border-radius: 10px;
+  background-color: initial;
+  border: 2px solid #fff;
+  margin-bottom: 20px;
+}
+
+button{
+  color: #fff;
+  text-align: center;
+  background-color: initial;
+  border-radius: 10px;
+  border: 2px solid #fff;
+  padding: 10px 20px;
+  margin: 10px;
+  font-size: 16px;
+}
+
+#game {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#betArea {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 180px;
+  gap: 30px;
+}
+
+#handChips {
+  height: 180px;
+  background: #06271f;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 30px;
+  padding-bottom: 10px;
+}
+
+.stack {
+  position: relative;
+  width: 80px;
+  height: 100%;
+}
+
+.chip {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  cursor: pointer;
+  background-size: 100%;
+  position: absolute;
+  left: 0;
+}
+
+.extra-chips{
+  position: absolute;
+  padding: 5px;
+  background-color: #636363c1;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: bold;
+  right: 0;
+  bottom: -20px;
+}
+
+.c500 { background-image: url(images/chip_500.png);}
+.c100 {background-image: url(images/chip_100.png);}
+.c50 {background-image: url(images/chip_50.png);}
+.c25 {background-image: url(images/chip_25.png);}
+</style>
+</head>
+<body>
+
+<div id="setup">
+  <h1>チップ管理システム</h1>
+  <p>チップ総量</p>
+  <input type="number" id="totalChips" value="1000">
+  <p>SB</p>
+  <input type="number" id="sb" value="25">
+  <p>BB</p>
+  <input type="number" id="bb" value="50">
+  <br>
+  <button onclick="startGame()">開始</button>
+</div>
+
+<div id="game" style="display:none;">
+  <div id="betArea"></div>
+
+  <button id="confirmBtn" onclick="confirmBet()">Confirm</button>
+
+  <div id="handChips"></div>
+  <button onclick="exchange(100,500)">exchange</button>
+</div>
+
+<script>
+let chips = {500:0,100:0,50:0,25:0};
+let bet = {500:0,100:0,50:0,25:0};
+const maxStack = 15;
+let locked = false;
+let dragFrom = null;
+
+function distribute(total) {
+  let result = {500:0,100:0,50:0,25:0};
+  let currentTotal = total;
+  const arrKeys = Object.keys(result)
+  // 25~500に分配し続ける
+  while (currentTotal>arrKeys[0]){
+    for (let i = 0;i < arrKeys.length;i++){
+      const currentChip = arrKeys[i];
+      if (currentTotal - currentChip >= 0){
+        currentTotal -= currentChip;
+        result[currentChip]++
+      }
+    }
+  }
+  return result;
+}
+
+function exchange(from,to){
+  if (from>to && chips[from]>0){
+    chips[from]--;
+    chips[to] += from/to;
+  }else if (to>from && to/from <= chips[from]){
+    chips[from] -= to/from;
+    chips[to]++;
+  }else return;
+  render();
+}
+
+function startGame() {
+  const total = parseInt(document.getElementById("totalChips").value);
+  chips = distribute(total);
+
+  document.getElementById("setup").style.display = "none"; // 完全非表示
+  document.getElementById("game").style.display = ""
+
+  render();
+}
+
+function createChip(value, index, count, location) {
+  const chip = document.createElement("div");
+  chip.className = `chip c${value}`;
+
+  // 下から積み上げる
+  chip.style.bottom = `${index * 5}px`;
+
+  return chip;
+}
+
+function createStack(value, count, location) {
+  const stack = document.createElement("div");
+  stack.className = "stack";
+
+  for (let i = 0; i < count; i++) {
+    if (i<maxStack){
+      stack.appendChild(createChip(value, i, count, location));
+    }else{
+      const extra = document.createElement("p");
+      extra.className = "extra-chips";
+      extra.textContent = "+"+ (count-i);
+      stack.appendChild(extra);
+      break;
+    }
+  }
+  stack.addEventListener("pointerdown",()=>{
+    dragFrom = value;
+  });
+  stack.addEventListener("touchup",()=>{
+    console.log(dragFrom)
+    if (dragFrom !== null){
+      if (dragFrom === value)moveChip(value,location)
+      else exchange(dragFrom,value)
+      dragFrom = null;
+    }
+  });
+  return stack;
+}
+
+function moveChip(value,location){
+    if (locked) return;
+    if (location === "hand" && chips[value] > 0) {
+      chips[value]--;
+      bet[value]++;
+    } else if (location === "bet" && bet[value] > 0) {
+      bet[value]--;
+      chips[value]++;
+    }
+    render();
+}
+
+function render() {
+  const hand = document.getElementById("handChips");
+  const betArea = document.getElementById("betArea");
+
+  hand.innerHTML = "";
+  betArea.innerHTML = "";
+
+  [500,100,50,25].forEach(v => {
+    // if (chips[v] > 0) 
+    hand.appendChild(createStack(v, chips[v], "hand"));
+    if (bet[v] > 0) betArea.appendChild(createStack(v, bet[v], "bet"));
+  });
+}
+
+function confirmBet() {
+  locked = true;
+}
+</script>
+
+</body>
+</html>
