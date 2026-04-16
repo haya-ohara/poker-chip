@@ -193,10 +193,10 @@ function createStack(value, count, location) {
       break;
     }
   }
-  stack.addEventListener("pointerdown",()=>{
+  stack.addEventListener("touchstart",()=>{
     dragFrom = value;
   });
-  stack.addEventListener("touchup",()=>{
+  stack.addEventListener("touchend",()=>{
     console.log(dragFrom)
     if (dragFrom !== null){
       if (dragFrom === value)moveChip(value,location)
