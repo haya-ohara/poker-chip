@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <!-- リセットCSS -->
 <link rel="stylesheet" href="https://unpkg.com/ress/dist/ress.min.css">
 <title>ポーカーチップ</title>
@@ -42,7 +42,7 @@ button{
 #game {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
 }
 
 #betArea {
@@ -68,6 +68,7 @@ button{
   position: relative;
   width: 80px;
   height: 100%;
+  touch-action: none;
 }
 
 .chip {
@@ -105,7 +106,7 @@ button{
 <body>
 
 <div id="setup">
-  <h1>チップ管理システム v1.02</h1>
+  <h1>チップ管理システム v1.03</h1>
   <p>チップ総量</p>
   <input type="number" id="totalChips" value="1000">
   <p>SB</p>
@@ -204,7 +205,8 @@ function createStack(value, count, location) {
 }
 document.addEventListener("pointerup",(e)=>{
   if (dragFrom === null)return
-  const target = e.target.closest(".stack");
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const target = el?.closest(".stack");
   if (!target)return
   const targetData = target.dataset;
   const dragData = dragFrom.dataset;
