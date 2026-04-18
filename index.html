@@ -46,7 +46,6 @@ button{
 }
 
 #betArea {
-  flex: 1;
   display: flex;
   justify-content: center;
   align-items: flex-end;
@@ -97,6 +96,29 @@ button{
   bottom: 0;
 }
 
+.dragging-chip{
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background-size: 100%;
+  opacity: 0.5;
+}
+
+.highlight{
+  outline: 3px solid #fff;
+  border-radius: 10px;
+}
+
+.addAmount{
+  position: absolute;
+  top: 0;
+  font-weight: bold;
+}
+
+.spacer{
+  flex: 1;
+}
+
 .c500{background-image: url(images/chip_500.png);}
 .c100{background-image: url(images/chip_100.png);}
 .c50 {background-image: url(images/chip_50.png);}
@@ -106,7 +128,7 @@ button{
 <body>
 
 <div id="setup">
-  <h1>チップ管理システム v1.03</h1>
+  <h1>チップ管理システム v1.04</h1>
   <p>チップ総量</p>
   <input type="number" id="totalChips" value="1000">
   <p>SB</p>
@@ -118,6 +140,7 @@ button{
 </div>
 
 <div id="game" style="display:none;">
+  <div class="spacer"></div>
   <div id="betArea"></div>
 
   <button id="confirmBtn" onclick="confirmBet()">Confirm</button>
@@ -126,11 +149,14 @@ button{
 </div>
 
 <script>
+const hand = document.getElementById("handChips");
+const betArea = document.getElementById("betArea");
 let chips = {500:0,100:0,50:0,25:0};
 let bet = {500:0,100:0,50:0,25:0};
 const maxStack = 15;
 let locked = false;
 let dragFrom = null;
+let dragVisual;
 
 function distribute(total) {
   let result = {500:0,100:0,50:0,25:0};
@@ -159,7 +185,6 @@ function exchange(from,to){
     chips[from] -= to/from;
     chips[to]++;
   }else return;
-  render();
 }
 
 function startGame() {
@@ -198,38 +223,85 @@ function createStack(value, count, location) {
       break;
     }
   }
-  stack.addEventListener("pointerdown",()=>{
+  stack.addEventListener("pointerdown",(e)=>{
+    if (stack.children.length === 0)return
     dragFrom = stack;
+
+    dragVisual = document.createElement("div");
+    dragVisual.className = `dragging-chip c${value}`;
+    document.body.appendChild(dragVisual);
+
+    //チップのドロップ先判定
+    const stacks = hand.querySelectorAll(".stack");
+    if (stack.dataset.location === "hand"){
+      betArea.classList.add("highlight")
+      for (const chipStack of stacks){;
+        const stackVal = Number(chipStack.dataset.value);
+        if (value !== stackVal){
+          const addAmount = document.createElement("p")
+          addAmount.className = "addAmount";
+          if (value/stackVal >= 1){
+            chipStack.classList.add("highlight")
+            addAmount.textContent = "+"+value/stackVal;
+          }else if(value*count >= stackVal){
+            chipStack.classList.add("highlight");
+            addAmount.textContent = "+"+1;
+          }
+          chipStack.appendChild(addAmount)
+        }
+      }
+    }else if(stack.dataset.location === "bet"){
+      for (const chipStack of stacks){
+        if (value === Number(chipStack.dataset.value)){
+          console.log("bet3")
+          chipStack.classList.add("highlight")
+        }
+      }
+    }
+    
+    moveVisual(e);
   });
   return stack;
 }
+document.addEventListener("pointermove",(e)=>{
+  if (!dragFrom)return
+  moveVisual(e);
+})
+function moveVisual(e){
+  dragVisual.style.left = e.clientX + "px";
+  dragVisual.style.top = e.clientY + "px";
+}
 document.addEventListener("pointerup",(e)=>{
-  if (dragFrom === null)return
-  const el = document.elementFromPoint(e.clientX, e.clientY);
-  const target = el?.closest(".stack");
-  if (!target)return
-  const targetData = target.dataset;
-  const dragData = dragFrom.dataset;
-  if (dragFrom === target)moveChip(dragData.value,dragData.location)
-  else if (dragData.location==="hand" && targetData.location === "hand")exchange(dragData.value,targetData.value);
+  if (dragFrom){
+    if (dragVisual)dragVisual.remove();
+    betArea.classList.remove("highlight")
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const target = el?.closest(".stack");
+    const dragData = dragFrom.dataset;
+    if (target){
+      const targetData = target.dataset;
+      if (dragFrom.dataset.value === target.dataset.value)moveChip(dragData.value,dragData.location)
+      else if (dragData.location==="hand" && targetData.location === "hand")exchange(dragData.value,targetData.value);
+    }else if (el?.closest("#betArea")){
+      moveChip(dragData.value,dragData.location)
+    }
+  }
   dragFrom = null;
+  render();
 })
 
 function moveChip(value,location){
-    if (locked) return;
-    if (location === "hand" && chips[value] > 0) {
-      chips[value]--;
-      bet[value]++;
-    } else if (location === "bet" && bet[value] > 0) {
-      bet[value]--;
-      chips[value]++;
-    }
-    render();
+  if (locked) return;
+  if (location === "hand" && chips[value] > 0) {
+    chips[value]--;
+    bet[value]++;
+  } else if (location === "bet" && bet[value] > 0) {
+    bet[value]--;
+    chips[value]++;
+  }
 }
 
 function render() {
-  const hand = document.getElementById("handChips");
-  const betArea = document.getElementById("betArea");
 
   hand.innerHTML = "";
   betArea.innerHTML = "";
