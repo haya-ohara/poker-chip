@@ -7,10 +7,6 @@
 <link rel="stylesheet" href="https://unpkg.com/ress/dist/ress.min.css">
 <title>ポーカーチップ</title>
 <style>
-html{
-  touch-action: manipulation;  
-}
-  
 body {
   font-family: sans-serif;
   text-align: center;
@@ -325,6 +321,9 @@ function confirmBet() {
 // document.addEventListener("touchmove",(e)=>{
 //   e.preventDefault();
 // },{passive:false})
+document.addEventListener("dblclick",(e)=>{
+  e.preventDefault();
+})
 </script>
 
 </body>
