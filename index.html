@@ -13,7 +13,7 @@
 <style>
 html{
   touch-action: none;
-  font-family: "Oxanium", sans-serif;
+  font-family: "Oxanium", monospace;
 }
 
 body {
@@ -40,6 +40,7 @@ input{
 button{
   color: #fff;
   text-align: center;
+  font-size: 0.8rem;
   background-color: initial;
   border-radius: 10px;
   border: 2px solid #fff;
@@ -54,22 +55,17 @@ button{
   height: 100dvh;
 }
 
-#betArea {
+.area{
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 180px;
-  gap: 30px;
+  height: 160px;
+  gap: 15px;
+  padding: 10px;
 }
 
-#handChips {
-  height: 180px;
+#handArea {
   background: #06271f;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 30px;
-  padding-bottom: 10px;
 }
 
 .stack {
@@ -156,43 +152,57 @@ button{
 <body>
 
 <div id="setup">
-  <h1>チップ管理システム v1.05</h1>
+  <h1 style="margin-bottom: 20px;">チップ管理システム v1.04</h1>
   <p>チップ総量</p>
   <input type="number" id="totalChips" value="1000">
   <p>SB</p>
   <input type="number" id="sb" value="25">
   <p>BB</p>
   <input type="number" id="bb" value="50">
+  <div style="display:flex; gap:30px; justify-content:center;">
+    <div>
+      <p>プレイヤー数</p>
+      <button id="players" onclick="playerCnt()">2</button>
+    </div>
+    <div>
+      <p>プレイヤー番号</p>
+      <button id="playerNum" onclick="playerNum()">1</button>
+    </div>
+  </div>
   <br>
   <button onclick="startGame()">開始</button>
 </div>
 
 <div id="game" style="display:none;">
   <div class="spacer"></div>
+  <div id="potArea" class="area"></div>
   <div class="actions">
     <div class="displayCount"><p class="small">Bets</p><p id="betCount">0</p></div>
-    <button id="confirm">CONFIRM</button>
+    <button id="confirm" onclick="confirmBet()">CONFIRM</button>
   </div>
-  <div id="betArea"></div>
+  <div id="betArea" class="area"></div>
 
   <div class="actions">
     <button id="allIn">ALL-IN</button>
-    <div class="displayCount"><p class="small">Your Chips</p><p id="chipCount">0</p></div>
+    <div class="displayCount"><p class="small">Chips</p><p id="chipCount">0</p></div>
     <button id="fold">FOLD</button>
   </div>
 
-  <div id="handChips"></div>
+  <div id="handArea" class="area"></div>
 </div>
 
 <script>
-const hand = document.getElementById("handChips");
+const hand = document.getElementById("handArea");
 const betArea = document.getElementById("betArea");
 let chips = {500:0,100:0,50:0,25:0};
 let bet = {500:0,100:0,50:0,25:0};
+let positions = ["SB","BB","UTG","EP2","EP3","MP1","MP2","MP3","CO","BTN"]
 const maxStack = 15;
 let locked = false;
 let dragFrom = null;
 let dragVisual;
+let players = 2;
+let plrPosition = 1
 
 function distribute(total) {
   let result = {500:0,100:0,50:0,25:0};
@@ -233,6 +243,10 @@ function startGame() {
   render();
 }
 
+function nextGame(){
+  plrPosition += plrPosition<players?1:-players+1;
+}
+
 function createChip(value, index, count, location) {
   const chip = document.createElement("div");
   chip.className = `chip c${value}`;
@@ -260,7 +274,7 @@ function createStack(value, count, location) {
     }
   }
   stack.addEventListener("pointerdown",(e)=>{
-    if (stack.children.length === 0)return
+    if (stack.children.length === 0 || locked)return
     dragFrom = stack;
 
     dragVisual = document.createElement("div");
@@ -314,7 +328,7 @@ document.addEventListener("pointerup",(e)=>{
     const target = el?.closest(".stack");
     const dragData = dragFrom.dataset;
     const targetData = target?.dataset;
-    if ((dragData.location === "hand" && el?.closest("#betArea")) || (dragData.location === "bet" && el?.closest("#handChips"))){
+    if ((dragData.location === "hand" && el?.closest("#betArea")) || (dragData.location === "bet" && el?.closest("#handArea"))){
       console.log("fired")
       moveChip(dragData.value,dragData.location,"all")
     }
@@ -329,7 +343,6 @@ document.addEventListener("pointerup",(e)=>{
 })
 
 function moveChip(value,location,amount){
-  if (locked) return;
   const from = location === "hand"?chips:bet;
   const to = location === "bet"?chips:bet;
   if (from[value] <= 0)return
@@ -382,12 +395,23 @@ function confirmBet() {
 
 // オールイン
 document.getElementById("allIn").addEventListener("click",()=>{
+  if (locked)return
   [500,100,50,25].forEach(c=>{
     bet[c] += chips[c]
     chips[c] = 0;
   })
   render();
 })
+
+function playerCnt(){
+  players += players<10?1:-9;
+  document.getElementById("players").textContent = players;
+}
+
+function playerNum(){
+  plrPosition += plrPosition<10?1:-9;
+  document.getElementById("playerNum").textContent = plrPosition;
+}
 
 // 禁止
 document.addEventListener("dblclick",(e)=>{
