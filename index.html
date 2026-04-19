@@ -5,10 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <!-- リセットCSS -->
 <link rel="stylesheet" href="https://unpkg.com/ress/dist/ress.min.css">
+<!-- フォント -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600..800&display=swap" rel="stylesheet">
 <title>ポーカーチップ</title>
 <style>
+html{
+  touch-action: none;
+  font-family: "Oxanium", sans-serif;
+}
+
 body {
-  font-family: sans-serif;
+  user-select: none;
   text-align: center;
   background: #0b3d2e;
   color: white;
@@ -67,7 +76,6 @@ button{
   position: relative;
   width: 80px;
   height: 100%;
-  touch-action: none;
 }
 
 .chip {
@@ -97,6 +105,7 @@ button{
 }
 
 .dragging-chip{
+  pointer-events: none;
   position: absolute;
   width: 80px;
   height: 80px;
@@ -105,7 +114,7 @@ button{
 }
 
 .highlight{
-  outline: 3px solid #fff;
+  outline: 3px solid #ffffff49;
   border-radius: 10px;
 }
 
@@ -115,8 +124,27 @@ button{
   font-weight: bold;
 }
 
+.actions{
+  display: flex;
+  justify-content: space-around;
+}
+
+.displayCount{
+  color: #fff;
+  text-align: center;
+  border-radius: 30px;
+  border: 2px solid #fff;
+  padding: 10px 20px;
+  margin: 10px;
+  font-size: 16px;
+}
+
 .spacer{
   flex: 1;
+}
+
+.small{
+  font-size: 0.5rem;
 }
 
 .c500{background-image: url(images/chip_500.png);}
@@ -128,7 +156,7 @@ button{
 <body>
 
 <div id="setup">
-  <h1>チップ管理システム v1.04</h1>
+  <h1>チップ管理システム v1.05</h1>
   <p>チップ総量</p>
   <input type="number" id="totalChips" value="1000">
   <p>SB</p>
@@ -141,9 +169,17 @@ button{
 
 <div id="game" style="display:none;">
   <div class="spacer"></div>
+  <div class="actions">
+    <div class="displayCount"><p class="small">Bets</p><p id="betCount">0</p></div>
+    <button id="confirm">CONFIRM</button>
+  </div>
   <div id="betArea"></div>
 
-  <button id="confirmBtn" onclick="confirmBet()">Confirm</button>
+  <div class="actions">
+    <button id="allIn">ALL-IN</button>
+    <div class="displayCount"><p class="small">Your Chips</p><p id="chipCount">0</p></div>
+    <button id="fold">FOLD</button>
+  </div>
 
   <div id="handChips"></div>
 </div>
@@ -253,7 +289,6 @@ function createStack(value, count, location) {
     }else if(stack.dataset.location === "bet"){
       for (const chipStack of stacks){
         if (value === Number(chipStack.dataset.value)){
-          console.log("bet3")
           chipStack.classList.add("highlight")
         }
       }
@@ -268,8 +303,8 @@ document.addEventListener("pointermove",(e)=>{
   moveVisual(e);
 })
 function moveVisual(e){
-  dragVisual.style.left = e.clientX + "px";
-  dragVisual.style.top = e.clientY + "px";
+  dragVisual.style.left = e.clientX - 40 + "px";
+  dragVisual.style.top = e.clientY - 40 + "px";
 }
 document.addEventListener("pointerup",(e)=>{
   if (dragFrom){
@@ -278,30 +313,53 @@ document.addEventListener("pointerup",(e)=>{
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const target = el?.closest(".stack");
     const dragData = dragFrom.dataset;
-    if (target){
-      const targetData = target.dataset;
-      if (dragFrom.dataset.value === target.dataset.value)moveChip(dragData.value,dragData.location)
-      else if (dragData.location==="hand" && targetData.location === "hand")exchange(dragData.value,targetData.value);
-    }else if (el?.closest("#betArea")){
-      moveChip(dragData.value,dragData.location)
+    const targetData = target?.dataset;
+    if ((dragData.location === "hand" && el?.closest("#betArea")) || (dragData.location === "bet" && el?.closest("#handChips"))){
+      console.log("fired")
+      moveChip(dragData.value,dragData.location,"all")
     }
+    else if (targetData?.location === "hand" || targetData?.location === "bet"){
+      if (dragFrom === target)moveChip(dragData.value,dragData.location)
+      else if (dragData.location==="hand" && targetData.location === "hand")exchange(dragData.value,targetData.value);
+    }
+    
   }
   dragFrom = null;
   render();
 })
 
-function moveChip(value,location){
+function moveChip(value,location,amount){
   if (locked) return;
-  if (location === "hand" && chips[value] > 0) {
-    chips[value]--;
-    bet[value]++;
-  } else if (location === "bet" && bet[value] > 0) {
-    bet[value]--;
-    chips[value]++;
-  }
+  const from = location === "hand"?chips:bet;
+  const to = location === "bet"?chips:bet;
+  if (from[value] <= 0)return
+  const moveAmount = amount === "all"?from[value]:1;
+  from[value] -= moveAmount;
+  to[value] += moveAmount;
+  console.log(from,chips)
+  
+  // if (location === "hand" && chips[value] > 0) {
+  //   if (amount === "all"){
+  //     bet[value] += chips[value];
+  //     chips[value] = 0;
+  //   }else{
+  //     chips[value]--;
+  //     bet[value]++;
+  //   }
+  // } else if (location === "bet" && bet[value] > 0) {
+  //   if (amount === "all"){
+  //     chips[value] += bet[value];
+  //     bet[value] = 0;
+  //   }else{
+  //     bet[value]--;
+  //     chips[value]++;
+  //   }
+  // }
 }
 
 function render() {
+  let chipCnt=0
+  let betCnt = 0
 
   hand.innerHTML = "";
   betArea.innerHTML = "";
@@ -310,18 +368,32 @@ function render() {
     // if (chips[v] > 0) 
     hand.appendChild(createStack(v, chips[v], "hand"));
     if (bet[v] > 0) betArea.appendChild(createStack(v, bet[v], "bet"));
+    chipCnt += v*chips[v]
+    betCnt += v*bet[v]
   });
+  
+  document.getElementById("chipCount").textContent = chipCnt
+  document.getElementById("betCount").textContent = betCnt
 }
 
 function confirmBet() {
   locked = true;
 }
 
-// スワイプ禁止
-// document.addEventListener("touchmove",(e)=>{
-//   e.preventDefault();
-// },{passive:false})
+// オールイン
+document.getElementById("allIn").addEventListener("click",()=>{
+  [500,100,50,25].forEach(c=>{
+    bet[c] += chips[c]
+    chips[c] = 0;
+  })
+  render();
+})
+
+// 禁止
 document.addEventListener("dblclick",(e)=>{
+  e.preventDefault();
+})
+document.addEventListener("contextmenu",(e)=>{
   e.preventDefault();
 })
 </script>
