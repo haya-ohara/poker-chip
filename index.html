@@ -322,7 +322,7 @@ function moveVisual(e){
 }
 document.addEventListener("pointerup",(e)=>{
   if (dragFrom){
-    if (dragVisual)dragVisual.remove();
+    dragVisual?.remove();
     betArea.classList.remove("highlight")
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const target = el?.closest(".stack");
@@ -349,11 +349,10 @@ function moveChip(value,location,amount){
   const moveAmount = amount === "all"?from[value]:1;
   from[value] -= moveAmount;
   to[value] += moveAmount;
-  console.log(from,chips)
 }
 
 function render() {
-  if (dragVisual)dragVisual.remove();
+  dragVisual?.remove();
 
   let chipCnt=0
   let betCnt = 0
@@ -396,6 +395,10 @@ function playerNum(){
   plrPosition += plrPosition<10?1:-9;
   document.getElementById("playerNum").textContent = plrPosition;
 }
+
+document.addEventListener("pointercancel",()=>{
+  dragVisual?.remove();
+})
 
 // 禁止
 document.addEventListener("dblclick",(e)=>{
