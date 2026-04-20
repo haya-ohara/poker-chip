@@ -350,27 +350,11 @@ function moveChip(value,location,amount){
   from[value] -= moveAmount;
   to[value] += moveAmount;
   console.log(from,chips)
-  
-  // if (location === "hand" && chips[value] > 0) {
-  //   if (amount === "all"){
-  //     bet[value] += chips[value];
-  //     chips[value] = 0;
-  //   }else{
-  //     chips[value]--;
-  //     bet[value]++;
-  //   }
-  // } else if (location === "bet" && bet[value] > 0) {
-  //   if (amount === "all"){
-  //     chips[value] += bet[value];
-  //     bet[value] = 0;
-  //   }else{
-  //     bet[value]--;
-  //     chips[value]++;
-  //   }
-  // }
 }
 
 function render() {
+  if (dragVisual)dragVisual.remove();
+
   let chipCnt=0
   let betCnt = 0
 
